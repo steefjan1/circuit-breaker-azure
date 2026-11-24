@@ -1,0 +1,13 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Azure/azure-dev/main/schemas/v1.0/azure.yaml.json
+name: circuit-breaker-azure
+metadata:
+  template: circuit-breaker-azure@1.0.0
+services:
+  orders:
+    project: src/Orders
+    language: dotnet
+    host: function
+  payment:
+    project: src/PaymentStub
+    language: dotnet
+    host: function

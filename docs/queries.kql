@@ -1,0 +1,45 @@
+// Run these in the Application Insights resource of the deployment (Logs).
+
+// 1. Circuit transitions per instance. One row per OPENED / HALF-OPEN / CLOSED log line.
+traces
+| where timestamp > ago(1h)
+| where message startswith "Circuit "
+| extend transition = extract(@"Circuit ([A-Z\-]+)", 1, message),
+         instance = tostring(customDimensions.InstanceId)
+| project timestamp, transition, instance, message
+| order by timestamp asc
+
+// 2. How many instances opened their own circuit in each minute.
+traces
+| where timestamp > ago(1h)
+| where message startswith "Circuit OPENED"
+| summarize opened = count(), instances = dcount(tostring(customDimensions.InstanceId)) by bin(timestamp, 1m)
+| order by timestamp asc
+
+// 3. Calls that actually left the orders app for the payment provider, by result.
+dependencies
+| where timestamp > ago(1h)
+| where cloud_RoleName has "orders" and type == "HTTP" and name has "charge"
+| summarize calls = count(), p50 = percentile(duration, 50), p95 = percentile(duration, 95)
+    by bin(timestamp, 10s), resultCode
+| order by timestamp asc
+
+// 4. Order requests by HTTP status: 201 paid, 202 parked, 503 failed.
+requests
+| where timestamp > ago(1h)
+| where name == "PlaceOrder"
+| summarize orders = count(), p50 = percentile(duration, 50) by bin(timestamp, 10s), resultCode
+| order by timestamp asc
+
+// 5. Settlement outcomes: late settlements and reschedules.
+traces
+| where timestamp > ago(1h)
+| where message has "settled late" or message has "rescheduled"
+| summarize count() by bin(timestamp, 10s), kind = iff(message has "settled late", "settled", "rescheduled")
+| order by timestamp asc
+
+// 6. Alert candidate: any circuit that opened in the last five minutes.
+traces
+| where timestamp > ago(5m)
+| where message startswith "Circuit OPENED"
+| summarize opened = count()

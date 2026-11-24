@@ -1,0 +1,17 @@
+<policies>
+    <inbound>
+        <base />
+        <!-- Route to the backend entity that carries the circuit breaker rule. -->
+        <set-backend-service backend-id="payment-stub" />
+    </inbound>
+    <backend>
+        <!-- Give up on a slow backend after five seconds. -->
+        <forward-request timeout="5" />
+    </backend>
+    <outbound>
+        <base />
+    </outbound>
+    <on-error>
+        <base />
+    </on-error>
+</policies>

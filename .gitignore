@@ -1,0 +1,8 @@
+bin/
+obj/
+.azure/
+.vs/
+*.user
+local.settings.json
+__pycache__/
+results/
